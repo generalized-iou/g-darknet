@@ -1,0 +1,6 @@
+classes = 6
+train  = datasets/hsr/train.txt
+valid  = datasets/hsr/valid.txt
+names  = datasets/hsr/hsr.names
+backup = backup
+prefix = yolov3-hsr-mse-1

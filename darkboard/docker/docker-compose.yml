@@ -1,0 +1,31 @@
+version: '2.3'
+services:
+  # rails and angular webserver
+  web:
+    build:
+      context: ./web
+      args:
+        UID: "${UID}"
+        UNAME: "${UNAME}"
+        GID: "${UID}"
+    ports:
+     - "4200:4200"
+    entrypoint: ${APPDIR}/darkboard/scripts/web.sh
+    user: "${UID}:${GID}"
+    volumes:
+      - ../../:${APPDIR}
+  # runs validation
+  nvidia:
+    build:
+      context: ./nvidia
+      args:
+        UID: "${UID}"
+        UNAME: "${UNAME}"
+        GID: "${UID}"
+    runtime: nvidia
+    entrypoint: ${APPDIR}/darkboard/scripts/crond.sh
+    user: "${UID}:${GID}"
+    volumes:
+      - ../../:${APPDIR}
+      # if you use a fast local disk for loading images, mount it at ${DATADIR}:
+      - /scr/ntsoi/darknet/datasets:/cvgl2/u/ntsoi/src/nn/darknet/datasets/

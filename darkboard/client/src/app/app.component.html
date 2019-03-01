@@ -1,0 +1,49 @@
+<mat-drawer-container class="example-container">
+  <mat-drawer mode="side" opened>
+    <mat-tab-group>
+      <mat-tab label="Experiments">
+        <mat-list *ngIf="experiments$ | async as experiments; else loadingExperiments">
+          <mat-list-item *ngFor="let experiment of experiments">
+            <div mat-line>
+              <mat-checkbox [(checked)]="experiment.shown" (change)="experimentVisibility($event, experiment)" [style.color]="experiment.color">{{experiment.name}}</mat-checkbox>
+              <span [className]="experiment.refreshing ? 'spin-it' : ''" *ngIf="experiment.selected">
+                <button mat-icon-button (click)="refreshChart(experiment)">
+                  <mat-icon>refresh</mat-icon>
+                </button>
+              </span>
+            </div>
+            <div mat-line>
+                <button mat-icon-button (click)="hideChart(experiment)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              <mat-form-field>
+                <input matInput type="color" [(ngModel)]="experiment.color" (ngModelChange)="debounceExperimentChange(experiment)" style="max-width: 20px">
+              </mat-form-field>
+              <mat-form-field>
+                <input matInput type="text" [(ngModel)]="experiment.subtitle" (ngModelChange)="debounceExperimentChange(experiment)" placeholder='nice name'>
+              </mat-form-field>
+            </div>
+          </mat-list-item>
+        </mat-list>
+        <ng-template #loadingExperiments>
+          <div class="spin-it" style="text-align:center;">
+            <mat-icon>refresh</mat-icon>
+          </div>
+        </ng-template>
+      </mat-tab>
+      <mat-tab label="Charts">
+        <mat-list>
+          <mat-list-item *ngFor="let chart_type of chart_types | keyvalue">
+            <mat-checkbox [(checked)]="chart_type.value.checked">{{chart_type.value.name}}</mat-checkbox>
+          </mat-list-item>
+        </mat-list>
+      </mat-tab>
+    </mat-tab-group>
+  </mat-drawer>
+  <mat-drawer-content>
+    <div class="chart-container" *ngFor="let chart_type of chart_types | keyvalue">
+      <h3>{{chart_type.value.name}}</h3>
+      <app-line-chart [chartData]="chart_data$" [chartType]="chart_type.key"></app-line-chart>
+    </div>
+  </mat-drawer-content>
+</mat-drawer-container>

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -312,8 +313,36 @@ layer parse_yolo(list *options, size_params params)
     char *a = option_find_str(options, "mask", 0);
     int *mask = parse_yolo_mask(a, &num);
     layer l = make_yolo_layer(params.batch, params.w, params.h, num, total, mask, classes);
+    fprintf(stderr, "yolo l.outputs: %d, param.inputs: %d\n", l.outputs, params.inputs);
     assert(l.outputs == params.inputs);
 
+    l.iou_normalizer = option_find_float(options, "iou_normalizer", 0.75);
+    l.cls_normalizer = option_find_float(options, "cls_normalizer", 1);
+    printf("cls_normalizer is %f\n", l.cls_normalizer);
+    char *iou_loss = option_find_str(options, "iou_loss", "iou");
+    printf("loss param is %s\n", iou_loss);
+    if (strcmp(iou_loss, "mse")==0) {
+      printf("loss is set to MSE\n");
+      l.iou_loss = MSE;
+    } else {
+      if (strcmp(iou_loss, "giou")==0) {
+        printf("loss is set to GIOU\n");
+        l.iou_loss = GIOU;
+      } else {
+        printf("loss is set to IOU\n");
+        l.iou_loss = IOU;
+      }
+    }
+    char *representation = option_find_str(options, "representation", "exp");
+    printf("representation param is %s\n", representation);
+    if (strcmp(representation, "lin")==0) {
+      printf("representation is set to REP_LIN\n");
+      l.representation = REP_LIN;
+    } else {
+      printf("representation is set to REP_EXP\n");
+      l.representation = REP_EXP;
+    }
+    fprintf(stderr, "Yolo layer params: iou loss: %s, iou_normalizer: %f, cls_normalizer: %f\n", (l.iou_loss==MSE?"mse":(l.iou_loss==GIOU?"giou":"iou")), l.iou_normalizer, l.cls_normalizer);
     l.max_boxes = option_find_int_quiet(options, "max",90);
     l.jitter = option_find_float(options, "jitter", .2);
 
@@ -677,6 +706,7 @@ void parse_net_options(list *options, network *net)
     net->w = option_find_int_quiet(options, "width",0);
     net->c = option_find_int_quiet(options, "channels",0);
     net->inputs = option_find_int_quiet(options, "inputs", net->h * net->w * net->c);
+    fprintf(stderr, "%d inputs\n", net->inputs);
     net->max_crop = option_find_int_quiet(options, "max_crop",net->w*2);
     net->min_crop = option_find_int_quiet(options, "min_crop",net->w);
     net->max_ratio = option_find_float_quiet(options, "max_ratio", (float) net->max_crop / net->w);
@@ -741,6 +771,11 @@ int is_network(section *s)
 
 network *parse_network_cfg(char *filename)
 {
+  return parse_network_cfg_inference(filename, false);
+}
+
+network *parse_network_cfg_inference(char *filename, bool inference_mode)
+{
     list *sections = read_cfg(filename);
     node *n = sections->front;
     if(!n) error("Config file has no sections");
@@ -756,6 +791,10 @@ network *parse_network_cfg(char *filename)
     params.h = net->h;
     params.w = net->w;
     params.c = net->c;
+    if (inference_mode) {
+      net->batch = 1;
+      net->subdivisions = 1;
+    }
     params.inputs = net->inputs;
     params.batch = net->batch;
     params.time_steps = net->time_steps;

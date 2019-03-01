@@ -4,6 +4,11 @@
 #include "cuda.h"
 #include <stdio.h>
 #include <math.h>
+#include <sys/time.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -279,28 +284,20 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
             rgb[2] = blue;
             box b = dets[i].bbox;
             //printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
+            // convert to abs coorinates w/ bounds checking
+            boxabs ba = box_to_boxabs(&b, im.w, im.h, 1);
 
-            int left  = (b.x-b.w/2.)*im.w;
-            int right = (b.x+b.w/2.)*im.w;
-            int top   = (b.y-b.h/2.)*im.h;
-            int bot   = (b.y+b.h/2.)*im.h;
-
-            if(left < 0) left = 0;
-            if(right > im.w-1) right = im.w-1;
-            if(top < 0) top = 0;
-            if(bot > im.h-1) bot = im.h-1;
-
-            draw_box_width(im, left, top, right, bot, width, red, green, blue);
+            draw_box_width(im, ba.left, ba.top, ba.right, ba.bot, width, red, green, blue);
             if (alphabet) {
                 image label = get_label(alphabet, labelstr, (im.h*.03));
-                draw_label(im, top + width, left, label, rgb);
+                draw_label(im, ba.top + width, ba.left, label, rgb);
                 free_image(label);
             }
             if (dets[i].mask){
                 image mask = float_to_image(14, 14, 1, dets[i].mask);
                 image resized_mask = resize_image(mask, b.w*im.w, b.h*im.h);
                 image tmask = threshold_image(resized_mask, .5);
-                embed_image(tmask, im, left, top);
+                embed_image(tmask, im, ba.left, ba.top);
                 free_image(mask);
                 free_image(resized_mask);
                 free_image(tmask);

@@ -2,6 +2,7 @@
 #define DARKNET_API
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
 #include <pthread.h>
 
@@ -48,6 +49,14 @@ tree *read_tree(char *filename);
 typedef enum{
     LOGISTIC, RELU, RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY, STAIR, HARDTAN, LHTAN, SELU
 } ACTIVATION;
+
+typedef enum{
+    IOU, GIOU, MSE
+} IOU_LOSS;
+
+typedef enum{
+    REP_EXP, REP_LIN
+} REPRESENTATION;
 
 typedef enum{
     PNG, BMP, TGA, JPG
@@ -135,6 +144,7 @@ struct layer{
     int truths;
     int h,w,c;
     int out_h, out_w, out_c;
+    // from yolo.cfg [num] value, number of anchor boxes
     int n;
     int max_boxes;
     int groups;
@@ -239,6 +249,10 @@ struct layer{
     float * weight_updates;
 
     float * delta;
+    float iou_normalizer;
+    float cls_normalizer;
+    int iou_loss;
+    int representation;
     float * output;
     float * loss;
     float * squared;
@@ -493,6 +507,7 @@ typedef struct network{
     float *output_gpu;
 #endif
 
+    char* logfile;
 } network;
 
 typedef struct {
@@ -515,6 +530,20 @@ typedef struct {
 typedef struct{
     float x, y, w, h;
 } box;
+
+typedef struct {
+  float left, right, top, bot;
+} boxabs;
+
+typedef struct {
+  float dt, db, dl, dr;
+} dxrep;
+
+typedef struct {
+  float iou, giou;
+  dxrep dx_iou;
+  dxrep dx_giou;
+} ious;
 
 typedef struct detection{
     box bbox;
@@ -584,7 +613,9 @@ typedef struct{
 } box_label;
 
 
+network *load_network_with_logfile(char *cfg, char *weights, int clear, char* logfile);
 network *load_network(char *cfg, char *weights, int clear);
+network *load_network_inference(char *cfg, char *weights, int clear, bool inference_mode);
 load_args get_base_args(network *net);
 
 void free_data(data d);
@@ -680,6 +711,7 @@ int option_find_int(list *l, char *key, int def);
 int option_find_int_quiet(list *l, char *key, int def);
 
 network *parse_network_cfg(char *filename);
+network *parse_network_cfg_inference(char *filename, bool inference_mode);
 void save_weights(network *net, char *filename);
 void load_weights(network *net, char *filename);
 void save_weights_upto(network *net, char *filename, int cutoff);
@@ -729,6 +761,8 @@ double what_time_is_it_now();
 image rotate_image(image m, float rad);
 void visualize_network(network *net);
 float box_iou(box a, box b);
+dxrep dx_box_iou(box a, box b, IOU_LOSS iou_loss);
+float box_giou(box a, box b);
 data load_all_cifar10();
 box_label *read_boxes(char *filename, int *n);
 box float_to_box(float *f, int stride);
@@ -790,6 +824,7 @@ void free_list(list *l);
 float mse_array(float *a, int n);
 float variance_array(float *a, int n);
 float mag_array(float *a, int n);
+float mag_array_skip(float *a, int n, bool* indices_to_skip);
 void scale_array(float *a, int n, float s);
 float mean_array(float *a, int n);
 float sum_array(float *a, int n);

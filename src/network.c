@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdbool.h>
 #include <time.h>
 #include <assert.h>
 #include "network.h"
@@ -50,9 +51,22 @@ load_args get_base_args(network *net)
     return args;
 }
 
+network *load_network_with_logfile(char *cfg, char *weights, int clear, char* logfile)
+{
+  network *net = load_network(cfg, weights, clear);
+  net->logfile = logfile;
+  return net;
+}
+
 network *load_network(char *cfg, char *weights, int clear)
 {
-    network *net = parse_network_cfg(cfg);
+  return load_network_inference(cfg, weights, clear, false);
+}
+
+network *load_network_inference(char *cfg, char *weights, int clear, bool inference_mode)
+{
+    network *net = parse_network_cfg_inference(cfg, inference_mode);
+    net->logfile = "";
     if(weights && weights[0] != 0){
         load_weights(net, weights);
     }
@@ -322,8 +336,14 @@ float train_network(network *net, data d)
     for(i = 0; i < n; ++i){
         get_next_batch(d, batch, i*batch, net->input, net->truth);
         float err = train_network_datum(net);
+        if (isnan(err)) {
+          printf("train_network_datum is NaN\n");
+          assert(0);
+        }
+        printf("train_network_err: %f\n", err);
         sum += err;
     }
+    printf("train_network sum: %f / %d\n", sum, (n*batch));
     return (float)sum/(n*batch);
 }
 
@@ -559,6 +579,9 @@ void fill_network_boxes(network *net, int w, int h, float thresh, float hier, in
     }
 }
 
+/**
+ * take the output of the network and return detection boxes
+ */
 detection *get_network_boxes(network *net, int w, int h, float thresh, float hier, int *map, int relative, int *num)
 {
     detection *dets = make_network_boxes(net, thresh, num);

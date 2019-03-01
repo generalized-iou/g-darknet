@@ -1,0 +1,7 @@
+classes= 80
+train = /scr/ntsoi/darknet/datasets/coco/coco/trainvalno5k.txt
+valid = datasets/coco/coco/testdev2017.txt
+names = data/coco.names
+backup = backup
+prefix = coco-baseline4
+eval = coco

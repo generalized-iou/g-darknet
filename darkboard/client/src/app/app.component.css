@@ -1,0 +1,23 @@
+.mat-drawer {
+  max-width: 310px;
+}
+.mat-drawer-container {
+  height: 100%;
+}
+.mat-drawer-content {
+  padding: 0 1em;
+}
+.chart-container {
+  display: inline-block;
+  border: 1px solid #666;
+  margin: 3px;
+  padding: 0 7px;
+}
+.chart-container h3 {
+  margin: 0;
+  top: 10px;
+  position: relative;
+}
+.mat-form-field-appearance-legacy .mat-form-field-infix {
+  padding: 0;
+}

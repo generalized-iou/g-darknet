@@ -49,6 +49,7 @@ detection_layer make_detection_layer(int batch, int inputs, int n, int side, int
 
 void forward_detection_layer(const detection_layer l, network net)
 {
+    // l.side is the number of cells in x and y direction
     int locations = l.side*l.side;
     int i,j;
     memcpy(l.output, net.input, l.outputs*l.batch*sizeof(float));

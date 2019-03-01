@@ -1,0 +1,8 @@
+classes= 601
+train  = datasets/openimages/train.txt
+#valid  = coco_testdev
+valid = datasets/openimages/val.txt
+names = data/openimages.names
+backup = backup
+eval = coco
+prefix = openimages-giou-1

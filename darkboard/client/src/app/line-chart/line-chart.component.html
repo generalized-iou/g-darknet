@@ -1,0 +1,26 @@
+<div fxLayout="row">
+  <div #chart></div>
+  <div fxLayout="column">
+    <div #controls>
+      <label>Max-X:</label>
+      <mat-form-field>
+        <input matInput type="number" [(ngModel)]="max_x" (ngModelChange)="redrawChart($event)" style="max-width: 40px;">
+      </mat-form-field>
+      <label>Max-Y:</label>
+      <mat-form-field>
+        <input matInput type="number" [(ngModel)]="max_y" (ngModelChange)="redrawChart($event)" style="max-width: 40px;">
+      </mat-form-field>
+      <label>Smooth Steps:</label>
+      <mat-form-field>
+        <input matInput type="number" [(ngModel)]="moving_avg_steps" (ngModelChange)="redrawChart($event)">
+      </mat-form-field>
+    </div>
+    <div #legend>
+      <ul>
+        <li *ngFor="let line of lines$ | async" [style.color]="line.color">
+          {{line.name}}, iteration: {{line.iterations_complete}}
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>

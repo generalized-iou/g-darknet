@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <math.h>
 #include <assert.h>
@@ -8,6 +9,12 @@
 #include <limits.h>
 #include <time.h>
 #include <sys/time.h>
+
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#define PATH_MAX_STRING_SIZE 256
 
 #include "utils.h"
 
@@ -581,6 +588,22 @@ float mag_array(float *a, int n)
     return sqrt(sum);
 }
 
+/**
+ * indicies to skip is a bit array
+ */
+float mag_array_skip(float *a, int n, bool * indices_to_skip)
+{
+    int i;
+    float sum = 0;
+    for(i = 0; i < n; ++i){
+        if (indices_to_skip[i] != true) {
+          sum += a[i]*a[i];
+        }
+    }
+    return sqrt(sum);
+}
+
+
 void scale_array(float *a, int n, float s)
 {
     int i;
@@ -724,3 +747,119 @@ float **one_hot_encode(float *a, int n, int k)
     return t;
 }
 
+/*
+from: https://gist.github.com/ChisholmKyle/0cbedcd3e64132243a39
+based on:
+  http://nion.modprobe.de/blog/archives/357-Recursive-directory-creation.html
+*/
+int mkdir_p(const char *dir, const mode_t mode) {
+    char tmp[PATH_MAX_STRING_SIZE];
+    char *p = NULL;
+    struct stat sb;
+    size_t len;
+
+    /* copy path */
+    len = strnlen (dir, PATH_MAX_STRING_SIZE);
+    if (len == 0 || len == PATH_MAX_STRING_SIZE) {
+        return -1;
+    }
+    memcpy (tmp, dir, len);
+    tmp[len] = '\0';
+
+    /* remove trailing slash */
+    if(tmp[len - 1] == '/') {
+        tmp[len - 1] = '\0';
+    }
+
+    /* check if path exists and is a directory */
+    if (stat (tmp, &sb) == 0) {
+        if (S_ISDIR (sb.st_mode)) {
+            return 0;
+        }
+    }
+
+    /* recursive mkdir */
+    for(p = tmp + 1; *p; p++) {
+        if(*p == '/') {
+            *p = 0;
+            /* test path */
+            if (stat(tmp, &sb) != 0) {
+                /* path does not exist - create directory */
+                if (mkdir(tmp, mode) < 0) {
+                    return -1;
+                }
+            } else if (!S_ISDIR(sb.st_mode)) {
+                /* not a directory */
+                return -1;
+            }
+            *p = '/';
+        }
+    }
+    /* test path */
+    if (stat(tmp, &sb) != 0) {
+        /* path does not exist - create directory */
+        if (mkdir(tmp, mode) < 0) {
+            return -1;
+        }
+    } else if (!S_ISDIR(sb.st_mode)) {
+        /* not a directory */
+        return -1;
+    }
+    return 0;
+}
+
+/**
+ * fields per line:
+ *   current batch
+ *   max batch
+ *   avg loss
+ * then each yolo layer appends:
+ *   comma separated avg iou
+ * \n at the beginning to allow this appending
+ */
+void log_train_loss(const char* path, const float avg_loss, const int current_batch, const int max_batches) {
+  FILE * fp;
+  fp = fopen(path, "a+");
+  fprintf(fp, "BATCH,%d,%d,%f\n",
+    current_batch,
+    max_batches,
+    avg_loss
+  );
+  fclose(fp);
+  //pt1.x = img_offset + draw_size * (float)current_batch / max_batches;
+  //pt1.y = draw_size * (1 - avg_loss / max_img_loss);
+  //sprintf(char_buff, "current avg loss = %2.4f", avg_loss);
+  //pt1.x = img_size / 2, pt1.y = 30;
+  //pt2.x = pt1.x + 250, pt2.y = pt1.y + 20;
+  //cvRectangle(img, pt1, pt2, CV_RGB(255, 255, 255), CV_FILLED, 8, 0);
+  //pt1.y += 15;
+  //cvPutText(img, char_buff, pt1, &font, CV_RGB(0, 0, 0));
+}
+
+void log_avg_iou(const char* path, const float tot_iou, const float tot_giou, const int count, const float iou_loss, const float classification_loss, const float total_loss) {
+  FILE * fp;
+  //printf("path: %s: %f\n", path, avg_iou);
+  fp = fopen(path, "a+");
+  fprintf(fp, "A%f,G%f,I%f,C%f,T%f,", tot_iou/count, tot_giou/count, iou_loss, classification_loss, total_loss);
+  fclose(fp);
+}
+
+/**
+ * Absolute box from relative coordinate bounding box and image size
+ */
+boxabs box_to_boxabs(const box* b, const int img_w, const int img_h, const int bounds_check) {
+  boxabs ba;
+  ba.left  = (b->x-b->w/2.)*img_w;
+  ba.right = (b->x+b->w/2.)*img_w;
+  ba.top   = (b->y-b->h/2.)*img_h;
+  ba.bot   = (b->y+b->h/2.)*img_h;
+
+  if (bounds_check) {
+    if(ba.left < 0) ba.left = 0;
+    if(ba.right > img_w-1) ba.right = img_w-1;
+    if(ba.top < 0) ba.top = 0;
+    if(ba.bot > img_h-1) ba.bot = img_h-1;
+  }
+
+  return ba;
+}

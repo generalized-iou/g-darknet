@@ -15,7 +15,6 @@ opencv/
 convnet/
 decaf/
 submission/
-cfg/
 darknet
 .fuse*
 
@@ -25,3 +24,11 @@ ehthumbs.db
 Icon?
 Thumbs.db
 *.swp
+
+builds/
+builds/*
+all_results/
+all_results/
+
+scripts/crontab
+log/

@@ -1,13 +1,21 @@
 #include "darknet.h"
+#include "../src/utils.h"
 
 static int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90};
 
+#define SAVE_EVERY 1000
 
 void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear)
 {
     list *options = read_data_cfg(datacfg);
     char *train_images = option_find_str(options, "train", "data/train.list");
     char *backup_directory = option_find_str(options, "backup", "/backup/");
+    char *run_prefix = option_find_str(options, "prefix", "");
+    char backup_path[256];
+    sprintf(backup_path, "%s/%s", backup_directory, run_prefix);
+    mkdir_p(backup_path, 0755);
+    char logf[256];
+    sprintf(logf, "%s/log.csv", backup_path);
 
     srand(time(0));
     char *base = basecfg(cfgfile);
@@ -15,6 +23,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     float avg_loss = -1;
     network **nets = calloc(ngpus, sizeof(network));
 
+    int last_save = 0;
     srand(time(0));
     int seed = rand();
     int i;
@@ -23,7 +32,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 #ifdef GPU
         cuda_set_device(gpus[i]);
 #endif
-        nets[i] = load_network(cfgfile, weightfile, clear);
+        nets[i] = load_network_with_logfile(cfgfile, weightfile, clear, logf);
         nets[i]->learning_rate *= ngpus;
     }
     srand(time(0));
@@ -127,20 +136,24 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
         i = get_current_batch(net);
         printf("%ld: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), loss, avg_loss, get_current_rate(net), what_time_is_it_now()-time, i*imgs);
+
+        log_train_loss(logf, avg_loss, i, net->max_batches);
+
         if(i%100==0){
 #ifdef GPU
             if(ngpus != 1) sync_nets(nets, ngpus, 0);
 #endif
             char buff[256];
-            sprintf(buff, "%s/%s.backup", backup_directory, base);
+            sprintf(buff, "%s/%s.backup", backup_path, base);
             save_weights(net, buff);
         }
-        if(i%10000==0 || (i < 1000 && i%100 == 0)){
+        if((i-last_save) > SAVE_EVERY || i%SAVE_EVERY == 0 || (i < SAVE_EVERY && i%100 == 0)){
 #ifdef GPU
             if(ngpus != 1) sync_nets(nets, ngpus, 0);
 #endif
             char buff[256];
-            sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
+            sprintf(buff, "%s/%s_%d.weights", backup_path, base, i);
+            last_save = i;
             save_weights(net, buff);
         }
         free_data(train);
@@ -149,7 +162,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     if(ngpus != 1) sync_nets(nets, ngpus, 0);
 #endif
     char buff[256];
-    sprintf(buff, "%s/%s_final.weights", backup_directory, base);
+    sprintf(buff, "%s/%s_final.weights", backup_path, base);
     save_weights(net, buff);
 }
 
@@ -243,7 +256,7 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
     int *map = 0;
     if (mapf) map = read_map(mapf);
 
-    network *net = load_network(cfgfile, weightfile, 0);
+    network *net = load_network_inference(cfgfile, weightfile, 0, true);
     set_batch_network(net, 2);
     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     srand(time(0));
@@ -361,19 +374,25 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
 }
 
 
-void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *outfile)
+void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *outfile, char *prefix_arg)
 {
     int j;
     list *options = read_data_cfg(datacfg);
     char *valid_images = option_find_str(options, "valid", "data/train.list");
     char *name_list = option_find_str(options, "names", "data/names.list");
-    char *prefix = option_find_str(options, "results", "results");
+    char *prefix;
+    if (prefix_arg && strlen(prefix_arg) > 0) {
+      prefix = prefix_arg;
+    } else {
+      prefix = option_find_str(options, "results", "results");
+    }
+    printf("results prefix: %s\n", prefix);
     char **names = get_labels(name_list);
     char *mapf = option_find_str(options, "map", 0);
     int *map = 0;
     if (mapf) map = read_map(mapf);
 
-    network *net = load_network(cfgfile, weightfile, 0);
+    network *net = load_network_inference(cfgfile, weightfile, 0, true);
     set_batch_network(net, 1);
     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     srand(time(0));
@@ -405,8 +424,10 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     } else {
         if(!outfile) outfile = "comp4_det_test_";
         fps = calloc(classes, sizeof(FILE *));
+        printf("output is set to %d classes in VOC style\n", classes);
         for(j = 0; j < classes; ++j){
             snprintf(buff, 1024, "%s/%s%s.txt", prefix, outfile, names[j]);
+            printf("writing result file: %s\n", buff);
             fps[j] = fopen(buff, "w");
         }
     }
@@ -486,14 +507,16 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     fprintf(stderr, "Total Detection Time: %f Seconds\n", what_time_is_it_now() - start);
 }
 
-void validate_detector_recall(char *cfgfile, char *weightfile)
+void validate_detector_recall(char *datacfg, char *cfgfile, char *weightfile)
 {
-    network *net = load_network(cfgfile, weightfile, 0);
+    list *options = read_data_cfg(datacfg);
+    network *net = load_network_inference(cfgfile, weightfile, 0, true);
     set_batch_network(net, 1);
     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     srand(time(0));
 
-    list *plist = get_paths("data/coco_val_5k.list");
+    char *valid_images = option_find_str(options, "valid", "data/train.list");
+    list *plist = get_paths(valid_images);
     char **paths = (char **)list_to_array(plist);
 
     layer l = net->layers[net->n-1];
@@ -566,7 +589,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     char **names = get_labels(name_list);
 
     image **alphabet = load_alphabet();
-    network *net = load_network(cfgfile, weightfile, 0);
+    network *net = load_network_inference(cfgfile, weightfile, 0, true);
     set_batch_network(net, 1);
     srand(2222222);
     double time;
@@ -830,14 +853,15 @@ void run_detector(int argc, char **argv)
     //int class = find_int_arg(argc, argv, "-class", 0);
 
     char *datacfg = argv[3];
+    printf("got data config '%s'\n", datacfg);
     char *cfg = argv[4];
     char *weights = (argc > 5) ? argv[5] : 0;
     char *filename = (argc > 6) ? argv[6]: 0;
     if(0==strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh, hier_thresh, outfile, fullscreen);
     else if(0==strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear);
-    else if(0==strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights, outfile);
+    else if(0==strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights, outfile, prefix);
     else if(0==strcmp(argv[2], "valid2")) validate_detector_flip(datacfg, cfg, weights, outfile);
-    else if(0==strcmp(argv[2], "recall")) validate_detector_recall(cfg, weights);
+    else if(0==strcmp(argv[2], "recall")) validate_detector_recall(datacfg, cfg, weights);
     else if(0==strcmp(argv[2], "demo")) {
         list *options = read_data_cfg(datacfg);
         int classes = option_find_int(options, "classes", 20);

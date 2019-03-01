@@ -1,0 +1,8 @@
+classes = 20
+train  = datasets/voc/train.txt
+#valid  = datasets/voc/2012_val.txt
+#valid  = datasets/voc/test2012.txt
+valid  = datasets/voc/2007_test.txt
+names  = data/voc.names
+backup = backup
+prefix = yolov3-baseline2

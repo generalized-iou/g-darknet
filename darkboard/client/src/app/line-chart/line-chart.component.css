@@ -1,0 +1,16 @@
+.overlay {
+  fill: none;
+  pointer-events: all;
+}
+
+.focus circle {
+  fill: none;
+}
+
+.mat-form-field-infix {
+  max-width: 120px;
+}
+
+.mat-form-field-infix input {
+  max-width: 120px;
+}

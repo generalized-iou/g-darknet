@@ -1,8 +1,15 @@
 classes= 80
-train  = /home/pjreddie/data/coco/trainvalno5k.txt
-valid  = coco_testdev
-#valid = data/coco_val_5k.list
+train  = datasets/coco/coco/trainvalno5k.txt
+# same valid and train
+#valid = datasets/coco/coco/trainvalno5k.txt
+# for submission
+#valid = /scr/ntsoi/darknet/datasets/coco/coco/val2017.txt
+valid = /scr/ntsoi/darknet/datasets/coco/coco/coco_val_5k.txt
+#valid = datasets/coco/coco/test2014.txt
+# for validation
+#valid = datasets/coco/coco/coco_val_5k.txt
 names = data/coco.names
-backup = /home/pjreddie/backup/
-eval=coco
+backup = backup
+prefix = coco-finetuned-iou-1.0-608
+eval = coco
 

@@ -48,6 +48,9 @@ float **one_hot_encode(float *a, int n, int k);
 float sec(clock_t clocks);
 void print_statistics(float *a, int n);
 int int_index(int *a, int val, int n);
-
+int mkdir_p(const char *dir, const mode_t mode);
+void log_train_loss(const char* path, const float avg_loss, const int current_batch, const int max_batches);
+void log_avg_iou(const char* path, const float tot_iou, const float tot_giou, const int count, const float iou_loss, const float classification_loss, const float total_loss);
+boxabs box_to_boxabs(const box* b, const int img_w, const int img_h, const int bounds_check);
 #endif
 
