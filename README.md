@@ -2,7 +2,7 @@
 
 YoloV3 with GIoU loss implemented in Darknet
 
-If you use this work, please cite:
+If you use this work, please consider citing:
 
 ```
 @article{Rezatofighi_2018_CVPR,
@@ -74,6 +74,15 @@ The [batch] directory contains the `sbatch` launch scripts for our cluster. Each
 We have created a visualization tool, named Darkboard, to plot data generated during training. Though the implementation was quick and dirty, this tool is useful in evaluating network performance.
 
 Details on running Darkboard can be found in the [/darkboard/README.md]() file.
+
+## Pre-trained Models
+
+See the [Workflow](#workflow) and [Evaluation](#evaluation) sections below for details on how to use these files
+
+||Link|Save as local file|cfg used for training|
+|--|--|--|
+|https://drive.google.com/a/stanford.edu/file/d/1wL-kNZP3fm1aaCPsm7cSKimPbvlh__yJ/view?usp=sharing|backup/coco-baseline4/yolov3_492000.weights|cfg/runs/coco-baseline4/yolov3.coco-baseline4.cfg|
+|https://drive.google.com/a/stanford.edu/file/d/1mxM_9qVvJTmudLiX03bJeGfc5yTXK7J-/view?usp=sharing|backup/coco-giou-12/yolov3_final.weights|cfg/runs/coco-giou-12/yolov3.coco-giou-12.cfg|
 
 ## Workflow
 
@@ -150,9 +159,98 @@ This repository contains tools for running ongoing evaluation while training the
 
 ### VOC
 
+Evaluate all weights files in the given `weights_folder` with both the IoU and GIoU metrics using the following script:
+
     python scripts/voc_all_map.py --data_file cfg/yolov3-voc-lin-1.data --cfg_file cfg/yolov3-voc-lin-1.cfg --weights_folder backup/yolov3-voc-lin-1/
 
+
 ### COCO
+
+Evaluate all weights files in the given `weights_folder` with both the IoU and GIoU metrics using the following script:
+
+    python scripts/coco_all_map.py --data_file cfg/coco-giou-12.data --cfg_file cfg/yolov3.coco-giou-12.cfg --weights_folder backup/coco-giou-12 --lib_folder lib --gpu_id 0 --min_weight_id 20000
+
+See the [scripts/crontab.tmpl]() file for details
+
+Evaluate a specific weights file:
+
+    mkdir -p results/coco-giou-12 && ./darknet detector valid cfg/runs/coco-giou-12/coco-giou-12.data cfg/runs/coco-giou-12/yolov3.coco-giou-12.cfg backup/coco-giou-12/yolov3_final.weights -i 0 -prefix results/coco-giou-12
+
+The detector results are written to `coco_results.json` in the prefix specified above
+
+Now edit `scripts/coco_eval.py` to load the this resulting json file and run the evaluation script:
+
+```
+> python scripts/coco_eval.py
+Running demo for *bbox* results.
+loading gt datasets/coco/coco/annotations/instances_minival2014.json
+loading annotations into memory...
+Done (t=4.76s)
+creating index...
+index created!
+loading predicted results/coco-giou-12/coco_results.json
+Loading and preparing results...
+DONE (t=3.04s)
+creating index...
+index created!
+Running per image evaluation...
+Evaluate annotation type *bbox*
+DONE (t=30.54s).
+Accumulating evaluation results...
+DONE (t=3.97s).
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.335
+ Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.533
+ Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.359
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.167
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.360
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.452
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.294
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.459
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.486
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.293
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.520
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.619
+```
+
+Or, for example, check the baseline:
+
+    mkdir -p results/coco-baseline-4 && ./darknet detector valid cfg/runs/coco-baseline4/coco.coco-baseline4.data cfg/runs/coco-baseline4/yolov3.coco-baseline4.cfg backup/coco-baseline4/yolov3_492000.weights -i 0 -prefix results/coco-baseline-4
+
+After editing `scripts/coco_eval.py` to load the this resulting json file and run the evaluation script:
+
+```
+> python scripts/coco_eval.py
+Running demo for *bbox* results.
+loading gt datasets/coco/coco/annotations/instances_minival2014.json
+loading annotations into memory...
+Done (t=4.76s)
+creating index...
+index created!
+loading predicted results/coco-baseline-4/coco_results.json
+Loading and preparing results...
+DONE (t=3.05s)
+creating index...
+index created!
+Running per image evaluation...
+Evaluate annotation type *bbox*
+DONE (t=27.54s).
+Accumulating evaluation results...
+DONE (t=3.31s).
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.314
+ Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.534
+ Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.329
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.153
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.340
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.426
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.282
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.427
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.446
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.272
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.474
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.590
+```
+
+Note that the above examples evalute on the IoU metric only, use the `scripts/coco_all_map.py` script to evaulate on the GIoU metric as well.
 
 ### Ongoing Evaluation
 
