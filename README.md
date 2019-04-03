@@ -73,7 +73,7 @@ The [batch] directory contains the `sbatch` launch scripts for our cluster. Each
 
 We have created a visualization tool, named Darkboard, to plot data generated during training. Though the implementation was quick and dirty, this tool is useful in evaluating network performance.
 
-Details on running Darkboard can be found in the [/darkboard/README.md] file.
+Details on running Darkboard can be found in the [/darkboard/README.md]() file.
 
 ## Workflow
 
@@ -82,11 +82,12 @@ When training the network I used several workstations and servers, each with one
 To make running on various machines easier, I use the `scripts/package_libs.sh` script to pull all dependencies of darknet and place them in a single folder (`lib`).
 
 For each test run I create the following new files:
+
 |file name|purpose|
-|-|-|
-|cfg/[run name].data|data sources for train and validation data as well as the run prefix setting (which, by convention I always to [run name])
-|cfg/[run name].cfg|network configuration including loss, normalizers and representation
-|batch/[run name].sbatch|slurm sbatch configuration for this test including number of GPUs
+|---|---|
+|cfg/[run name].data|data sources for train and validation data as well as the run prefix setting (which, by convention I always to [run name])|
+|cfg/[run name].cfg|network configuration including loss, normalizers and representation|
+|batch/[run name].sbatch|slurm sbatch configuration for this test including number of GPUs|
 
 Note that the `cfg/[run name].cfg` file contains parameters that must be changed when changing the number of GPUs used for training.
 
