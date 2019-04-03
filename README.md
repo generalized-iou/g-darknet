@@ -79,10 +79,10 @@ Details on running Darkboard can be found in the [/darkboard/README.md]() file.
 
 See the [Workflow](#workflow) and [Evaluation](#evaluation) sections below for details on how to use these files
 
-||Link|Save as local file|cfg used for training|
+|Link|Save as local file|cfg used for training|
 |--|--|--|
-|https://drive.google.com/a/stanford.edu/file/d/1wL-kNZP3fm1aaCPsm7cSKimPbvlh__yJ/view?usp=sharing|backup/coco-baseline4/yolov3_492000.weights|cfg/runs/coco-baseline4/yolov3.coco-baseline4.cfg|
-|https://drive.google.com/a/stanford.edu/file/d/1mxM_9qVvJTmudLiX03bJeGfc5yTXK7J-/view?usp=sharing|backup/coco-giou-12/yolov3_final.weights|cfg/runs/coco-giou-12/yolov3.coco-giou-12.cfg|
+|http://bit.ly/2JZ9uMc|backup/coco-baseline4/yolov3_492000.weights|cfg/runs/coco-baseline4/yolov3.coco-baseline4.cfg|
+|http://bit.ly/2TRNa6V|backup/coco-giou-12/yolov3_final.weights|cfg/runs/coco-giou-12/yolov3.coco-giou-12.cfg|
 
 ## Workflow
 
