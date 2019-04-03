@@ -125,9 +125,11 @@ Test on Ubuntu 16.04
 
  - Install `rbenv` and `ruby-build`
 
- - `gem install bundler`
+ - Install ruby with ruby build via: `rbenv install`
 
- - `bundle`
+ - Install bundler `gem install bundler -v '1.17.3'`
+
+ - Bundle `bundle`
 
  - update node
 
@@ -159,6 +161,8 @@ In another shell, start the angular server:
     cd client
     yarn install
     yarn start
+
+Now open http://localhost:4200 in your browser.
 
 ## Background data processing
 
