@@ -190,7 +190,7 @@ float box_union(box a, box b)
 boxabs box_c(box a, box b) {
   boxabs ba = {0};
   ba.top = fmin(a.y - a.h/2, b.y - b.h/2);
-  ba.bot = fmin(a.y + a.h/2, b.y + b.h/2);
+  ba.bot = fmax(a.y + a.h/2, b.y + b.h/2);
   ba.left = fmin(a.x - a.w/2, b.x - b.w/2);
   ba.right = fmax(a.x + a.w/2, b.x + b.w/2);
   return ba;
