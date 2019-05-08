@@ -80,7 +80,7 @@ Details on running Darkboard can be found in the [/darkboard/README.md]() file.
 See the [Workflow](#workflow) and [Evaluation](#evaluation) sections below for details on how to use these files
 
 |Link|Dataset|Loss|Save as local file|cfg used for training|
-|--|--|--|--|
+|--|--|--|--|--|
 |https://stanford.io/2Hb6hpz|coco|mse|backup/coco-baseline4/yolov3_492000.weights|cfg/runs/coco-baseline4/yolov3.coco-baseline4.cfg|
 |https://stanford.io/307a4LO|coco|iou|backup/coco-iou-14/yolov3_470000.weights|cfg/runs/coco-iou-14/yolov3.coco-iou-14.cfg|
 |https://stanford.io/2PWP8Cz|coco|giou|backup/coco-giou-12/yolov3_final.weights|cfg/runs/coco-giou-12/yolov3.coco-giou-12.cfg|
