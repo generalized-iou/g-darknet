@@ -79,10 +79,27 @@ Details on running Darkboard can be found in the [/darkboard/README.md]() file.
 
 See the [Workflow](#workflow) and [Evaluation](#evaluation) sections below for details on how to use these files
 
-|Link|Save as local file|cfg used for training|
-|--|--|--|
-|http://bit.ly/2JZ9uMc|backup/coco-baseline4/yolov3_492000.weights|cfg/runs/coco-baseline4/yolov3.coco-baseline4.cfg|
-|http://bit.ly/2TRNa6V|backup/coco-giou-12/yolov3_final.weights|cfg/runs/coco-giou-12/yolov3.coco-giou-12.cfg|
+|Link|Dataset|Loss|Save as local file|cfg used for training|
+|--|--|--|--|
+|https://stanford.io/2Hb6hpz|coco|mse|backup/coco-baseline4/yolov3_492000.weights|cfg/runs/coco-baseline4/yolov3.coco-baseline4.cfg|
+|https://stanford.io/307a4LO|coco|iou|backup/coco-iou-14/yolov3_470000.weights|cfg/runs/coco-iou-14/yolov3.coco-iou-14.cfg|
+|https://stanford.io/2PWP8Cz|coco|giou|backup/coco-giou-12/yolov3_final.weights|cfg/runs/coco-giou-12/yolov3.coco-giou-12.cfg|
+|https://stanford.io/2vNjsGC|voc|mse|backup/yolov3-baseline2/yolov3-voc_50000.weights|cfg/runs/yolov3-baseline2/yolov3-voc.yolov3-baseline2.cfg|
+|https://stanford.io/2WyedWT|voc|iou|backup/yolov3-giou-30/yolov3-voc_48000.weights|cfg/runs/yolov3-giou-30/yolov3-voc.yolov3-giou-30.cfg|
+|https://stanford.io/2Hb70Hj|voc|giou|backup/yolov3-giou-40/yolov3-voc_50000.weights|cfg/runs/yolov3-giou-40/yolov3-voc.yolov3-giou-40.cfg|
+
+Or download them all with:
+
+```
+mkdir backup && cd backup
+mkdir coco-baseline4 && cd coco-baseline4 && curl -O https://stanford.io/2Hb6hpz && cd ..
+mkdir coco-iou-14 && cd coco-iou-14 && curl -O https://stanford.io/307a4LO && cd ..
+mkdir coco-giou-12 && cd coco-giou-12 && curl -O https://stanford.io/2PWP8Cz && cd ..
+mkdir yolov3-baseline2 && cd yolov3-baseline2 && curl -O https://stanford.io/2vNjsGC && cd ..
+mkdir yolov3-giou-30 && cd yolov3-giou-30 && curl -O https://stanford.io/2WyedWT && cd ..
+mkdir yolov3-giou-40 && cd yolov3-giou-40 && curl -O https://stanford.io/2Hb70Hj && cd ..
+cd ..
+```
 
 ## Workflow
 
@@ -163,6 +180,58 @@ Evaluate all weights files in the given `weights_folder` with both the IoU and G
 
     python scripts/voc_all_map.py --data_file cfg/yolov3-voc-lin-1.data --cfg_file cfg/yolov3-voc-lin-1.cfg --weights_folder backup/yolov3-voc-lin-1/
 
+MSE Loss on IoU Metric
+
+    mkdir -p results/voc-baseline2 && ./darknet detector valid cfg/runs/yolov3-baseline2/voc.yolov3-baseline2.data cfg/runs/yolov3-baseline2/yolov3-voc.yolov3-baseline2.cfg backup/yolov3-baseline2/yolov3-voc_50000.weights -i 0 -prefix results/voc-baseline2
+    python scripts/voc_reval.py results/voc-baseline2
+
+Will show:
+
+    Threshold: 0.50 | mAP: 0.759
+    Threshold: 0.55 | mAP: 0.736
+    Threshold: 0.60 | mAP: 0.704
+    Threshold: 0.65 | mAP: 0.658
+    Threshold: 0.70 | mAP: 0.579
+    Threshold: 0.75 | mAP: 0.486
+    Threshold: 0.80 | mAP: 0.356
+    Threshold: 0.85 | mAP: 0.219
+    Threshold: 0.90 | mAP: 0.093
+    Threshold: 0.95 | mAP: 0.022
+    mAP: 0.461139307176
+
+To evaluate on the GIoU Metric, run:
+
+    python scripts/voc_reval.py results/voc-baseline2 --giou_metric
+
+Which yields:
+
+    Threshold: 0.50 | mAP: 0.752
+    Threshold: 0.55 | mAP: 0.725
+    Threshold: 0.60 | mAP: 0.690
+    Threshold: 0.65 | mAP: 0.639
+    Threshold: 0.70 | mAP: 0.566
+    Threshold: 0.75 | mAP: 0.467
+    Threshold: 0.80 | mAP: 0.345
+    Threshold: 0.85 | mAP: 0.209
+    Threshold: 0.90 | mAP: 0.092
+    Threshold: 0.95 | mAP: 0.022
+    mAP: 0.450614109869
+
+IOU Loss
+
+    mkdir -p results/voc-giou-30 && ./darknet detector valid cfg/runs/yolov3-giou-30/voc.yolov3-giou-30.data cfg/runs/yolov3-giou-30/yolov3-voc.yolov3-giou-30.cfg backup/yolov3-giou-30/yolov3-voc_48000.weights -i 0 -prefix results/voc-giou-30
+    # IoU Metric Eval
+    python scripts/voc_reval.py results/voc-giou-30
+    # GIoU Metric Eval
+    python scripts/voc_reval.py results/voc-giou-30 --giou_metric
+
+GIOU Loss
+
+    mkdir -p results/voc-giou-40 && ./darknet detector valid cfg/runs/yolov3-giou-40/voc.yolov3-giou-40.data cfg/runs/yolov3-giou-40/yolov3-voc.yolov3-giou-40.cfg backup/yolov3-giou-40/yolov3-voc_51000.weights -i 0 -prefix results/voc-giou-40
+    # IoU Metric Eval
+    python scripts/voc_reval.py results/voc-giou-40
+    # GIoU Metric Eval
+    python scripts/voc_reval.py results/voc-giou-40 --giou_metric
 
 ### COCO
 
@@ -170,7 +239,7 @@ Evaluate all weights files in the given `weights_folder` with both the IoU and G
 
     python scripts/coco_all_map.py --data_file cfg/coco-giou-12.data --cfg_file cfg/yolov3.coco-giou-12.cfg --weights_folder backup/coco-giou-12 --lib_folder lib --gpu_id 0 --min_weight_id 20000
 
-See the [scripts/crontab.tmpl]() file for details
+See the [crontab.tmpl](scripts/crontab.tmpl) file for details
 
 Evaluate a specific weights file:
 

@@ -25,10 +25,11 @@ def parse_args():
     parser.add_argument('output_dir', nargs=1, help='results directory',
                         type=str)
     parser.add_argument('--voc_dir', dest='voc_dir', default='datasets/voc/VOCdevkit', type=str)
-    parser.add_argument('--year', dest='year', default='2017', type=str)
+    parser.add_argument('--year', dest='year', default='2007', type=str)
     parser.add_argument('--image_set', dest='image_set', default='test', type=str)
 
     parser.add_argument('--classes', dest='class_file', default='data/voc.names', type=str)
+    parser.add_argument("--giou_metric", dest='use_giou', default=False, action='store_true')
 
     if len(sys.argv) == 1:
         parser.print_help()
@@ -100,4 +101,17 @@ if __name__ == '__main__':
     classes = [t.strip('\n') for t in lines]
 
     print 'Evaluating detections'
-    do_python_eval(args.voc_dir, args.year, args.image_set, classes, output_dir)
+    mean_map_sum = 0
+    mean_map_count = 0
+    maps = []
+    mAP_analysis = []
+    for i in range(50, 100, 5):
+        iou_threshold = i / float(100)
+        mAP = do_python_eval(args.voc_dir, args.year, args.image_set, classes, output_dir, iou_threshold, args.use_giou)
+        mean_map_sum += mAP
+        mean_map_count += 1
+        maps.append(mAP)
+        mAP_analysis.append([iou_threshold, mAP])
+    mean_map = mean_map_sum/mean_map_count
+    print("\n".join(["Threshold: {:3.2f} | mAP: {:4.3f}".format(x[0],x[1]) for x in mAP_analysis]))
+    print("mAP: {} ".format(mean_map))
