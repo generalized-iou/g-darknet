@@ -76,7 +76,7 @@ GEM
     nokogiri (1.8.4)
       mini_portile2 (~> 2.3.0)
     puma (3.12.0)
-    rack (2.0.5)
+    rack (2.0.8)
     rack-test (1.1.0)
       rack (>= 1.0, < 3)
     rails (5.2.1)
